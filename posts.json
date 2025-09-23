@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "title": "Мой первый пост",
+    "description": "Это просто пример. Скоро здесь будет что-то интересное.",
+    "image": "https://via.placeholder.com/300x200",
+    "likes": 5
+  },
+  {
+    "id": 2,
+    "title": "Второй пост",
+    "description": "Продолжаем писать. Здесь можно рассказать о чём угодно.",
+    "image": "https://via.placeholder.com/300x200",
+    "likes": 12
+  }
+]
