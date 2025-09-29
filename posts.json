@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "title": "Перший пост",
+    "description": "1 пост",
+    "image": "",
+    "likes": 5
+  },
+  {
+    "id": 2,
+    "title": "Другий пост",
+    "description": "2 постьт",
+    "image": "",
+    "likes": 12
+  }
+]
