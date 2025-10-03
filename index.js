@@ -1,10 +1,11 @@
 const express = require('express');
 const fs = require('fs');
+const fsPromises = require('fs/promises');
 const path = require('path');
-
 const app = express();
-const HOST = "127.0.0.1";
+const HOST = '127.0.0.1';
 const PORT = 8000;
+
 const postsFilePath = path.join(__dirname, 'posts.json');
 const usersFilePath = path.join(__dirname, 'users.json');
 
@@ -68,46 +69,88 @@ app.get('/posts/:id', (req, res) => {
     res.status(404).send('Пост не знайдено');
   }
 });
-app.get('/users', (req, res) => {
-  const publicUsers = users.map(user => {
-    const { password, ...publicUser } = user;
-    return publicUser;
-  });
-  res.status(200).json(publicUsers);
+app.post('/posts', async (req, res) => {
+  try {
+    const { назва, опис, картинка, title, description, image } = req.body;
+    const name = назва || title;
+    const desc = опис || description;
+    const img = картинка || image;
+
+    // Перевірка валідації якщо якесь поле відсутнє то 422 помилка
+    if (!name || !desc || !img) {
+      return res.status(422).json({
+        error: "Помилка валідації",
+        message: "Потрібні поля: 'назва', 'опис', 'картинка' або 'title', 'description', 'image'"
+      });
+    }
+
+    let currentPosts = [];
+    try {
+      const data = await fsPromises.readFile(postsFilePath, 'utf-8');
+      currentPosts = JSON.parse(data);
+    } catch (err) {
+      // Якщо файл ще не існує то починаємо з порожнього масиву
+      if (err.code === 'ENOENT') currentPosts = [];
+      else throw err;
+    }
+
+    const newPost = {
+      id: String(currentPosts.length + 1),
+      назва: name,
+      опис: desc,
+      картинка: img,
+      createdAt: new Date().toISOString()
+    };
+
+    currentPosts.push(newPost);
+    posts = currentPosts;
+    await fsPromises.writeFile(postsFilePath, JSON.stringify(currentPosts, null, 2), 'utf8');
+
+    return res.status(201).json(newPost);
+  } catch (error) {
+    console.error("Помилка при POST /posts:", error);
+    return res.status(500).json({
+      error: "Помилка сервера",
+      message: "Не вдалося обробити запит."
+    });
+  }
 });
 
+app.get('/users', (req, res) => {
+  const publicUsers = users.map(user => {
+    const { password, ...pub } = user;
+    return pub;
+  });
+
+  return res.status(200).json(publicUsers);
+});
 app.get('/users/:id', (req, res) => {
   const userId = req.params.id;
   const fieldsParam = req.query.fields;
   const user = users.find(u => u.id === userId);
-// Якщо користувача не знайдено, повертаємо 404.
-  if (!user) {
-    return res.status(404).send('Користувача не знайдено');
-  }
+
+  // Якщо не знайдено 404
+  if (!user) return res.status(404).send('Користувача не знайдено');
 
   const { password, ...safeUser } = user;
-  // Перевіряємо, чи був переданий параметр 'fields' для фільтрації.
+
+  // Якщо передано параметр fieldsнаприклад ?fields=nameemail
   if (fieldsParam) {
     const selectedFields = fieldsParam.split(',').map(f => f.trim());
     const result = {};
 
-    selectedFields.forEach(field => {
-      // Перевіряємо, чи існує запрошене поле в об'єкті користувача.
-      if (safeUser.hasOwnProperty(field)) {
-        result[field] = safeUser[field];
-      }
+    // Збираємо тільки ті поля які реально існують
+    selectedFields.forEach(f => {
+      if (safeUser.hasOwnProperty(f)) result[f] = safeUser[f];
     });
-  // Перевіряємо, чи знайшли ми хоча б одне поле.
-    if (Object.keys(result).length > 0) {
-      return res.status(200).json(result);
-    } else {
-      return res.status(400).send('Жодне із полів не знайдено.');
-    }
-  }
 
-  res.status(200).json(safeUser);
+    // кщо знайшли хоча б одне поле  то повертаємо його
+    if (Object.keys(result).length > 0) return res.status(200).json(result);
+    return res.status(400).send('Жодне із полів не знайдено.');
+  }
+  return res.status(200).json(safeUser);
 });
 
 app.listen(PORT, HOST, () => {
-  console.log("Сервер запущено!");
+  console.log(`Сервер запущено http://${HOST}:${PORT}`);
 });
