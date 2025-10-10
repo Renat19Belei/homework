@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import * as postService from "./post.service";
+import type { Request, Response } from "express";
+import * as postService from "./post.service"; 
 
 export const getAllPosts = (req: Request, res: Response) => {
   const posts = postService.getAllPosts();

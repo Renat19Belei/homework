@@ -10,5 +10,10 @@
     "email": "magomed@example.com",
     "password": "hashed_password_2",
     "role": "user"
+  },
+  {
+    "id": 1760091535407,
+    "name": "rakal",
+    "email": "rakal@gmail.com"
   }
 ]
