@@ -1,15 +1,21 @@
 import fs from "fs";
 
 const DATA_FILE = "./users.json";
-interface User {
+
+export interface User {
   id: number;
+  name: string;
+  email: string;
+}
+
+export interface CreateUser {
   name: string;
   email: string;
 }
 
 const readData = (): User[] => {
   const data = fs.readFileSync(DATA_FILE, "utf-8");
-  return JSON.parse(data);
+  return JSON.parse(data) as User[];
 };
 
 const writeData = (data: User[]): void => {
@@ -20,14 +26,13 @@ export const getAllUsers = (): User[] => readData();
 
 export const getUserById = (id: number): User | undefined => {
   const users = readData();
-  return users.find((u) => u.id === id);
+  return users.find(u => u.id === id);
 };
 
-export const createUser = (userData: any) => {
+export const createUser = (userData: CreateUser): User => {
   const users = readData();
-  const newUser = { id: Date.now(), ...userData };
+  const newUser: User = { id: Date.now(), ...userData };
   users.push(newUser);
   writeData(users);
   return newUser;
 };
-
