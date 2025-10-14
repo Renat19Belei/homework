@@ -1,17 +1,7 @@
 import fs from "fs";
+import { Post, CreatePostData, UpdatePostData } from "./post.types";
 
 const DATA_FILE = "./posts.json";
-
-export interface Post {
-  id: number;
-  title: string;
-  content: string;
-}
-
-export interface CreatePost {
-  title: string;
-  content: string;
-}
 
 const readData = (): Post[] => {
   const data = fs.readFileSync(DATA_FILE, "utf-8");
@@ -22,21 +12,31 @@ const writeData = (data: Post[]): void => {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 };
 
-export const getAllPosts = (): Post[] => {
-  return readData();
-};
+export const getAllPosts = (): Post[] => readData();
 
 export const getPostById = (id: number): Post | undefined => {
   const posts = readData();
   return posts.find(post => post.id === id);
 };
 
-export const createPost = (postData: CreatePost): Post => {
+export const createPost = (postData: CreatePostData): Post => {
   const posts = readData();
   const newPost: Post = { id: Date.now(), ...postData };
   posts.push(newPost);
   writeData(posts);
   return newPost;
+};
+
+export const updatePost = (id: number, data: UpdatePostData): Post | undefined => {
+  const posts = readData();
+  const index = posts.findIndex(p => p.id === id);
+
+  if (index === -1) return undefined;
+
+  posts[index] = { ...posts[index], ...data };
+  writeData(posts);
+
+  return posts[index];
 };
 
 export const deletePost = (id: number): boolean => {
@@ -50,4 +50,3 @@ export const deletePost = (id: number): boolean => {
   writeData(filtered);
   return true;
 };
-
