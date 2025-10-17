@@ -1,52 +1,40 @@
-import fs from "fs";
-import { Post, CreatePostData, UpdatePostData } from "./post.types";
-
-const DATA_FILE = "./posts.json";
-
-const readData = (): Post[] => {
-  const data = fs.readFileSync(DATA_FILE, "utf-8");
-  return JSON.parse(data) as Post[];
-};
-
-const writeData = (data: Post[]): void => {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-};
-
-export const getAllPosts = (): Post[] => readData();
-
-export const getPostById = (id: number): Post | undefined => {
-  const posts = readData();
-  return posts.find(post => post.id === id);
-};
-
-export const createPost = (postData: CreatePostData): Post => {
-  const posts = readData();
-  const newPost: Post = { id: Date.now(), ...postData };
-  posts.push(newPost);
-  writeData(posts);
-  return newPost;
-};
-
-export const updatePost = (id: number, data: UpdatePostData): Post | undefined => {
-  const posts = readData();
-  const index = posts.findIndex(p => p.id === id);
-
-  if (index === -1) return undefined;
-
-  posts[index] = { ...posts[index], ...data };
-  writeData(posts);
-
-  return posts[index];
-};
-
-export const deletePost = (id: number): boolean => {
-  const posts = readData();
-  const filtered = posts.filter(post => post.id !== id);
-
-  if (filtered.length === posts.length) {
-    return false;
+import { IPostService, CreatePostData, UpdatePostData, Post } from "./post.types";
+export class PostService implements IPostService {
+  private posts: Post[] = [];
+  
+// let posts = []
+  getAllPosts() {
+    console.log("Отримємо всі пости");
+    return this.posts;
   }
 
-  writeData(filtered);
-  return true;
-};
+  getPostById(id: number) {
+    return this.posts.find((p) => p.id === id);
+  }
+
+  createPost(data: CreatePostData) {
+    const id = this.posts.length ? this.posts[this.posts.length - 1].id + 1 : 1;
+    const newPost: Post = { id, ...data };
+    this.posts.push(newPost);
+    console.log("Новий пост створено", newPost);
+    return newPost;
+  }
+
+  updatePost(id: number, data: UpdatePostData) {
+    const index = this.posts.findIndex((p) => p.id === id);
+    if (index === -1) return undefined;
+    this.posts[index] = { ...this.posts[index], ...data };
+    console.log("Пост оновлено", this.posts[index]);
+    return this.posts[index];
+  }
+
+  deletePost(id: number) {
+    const before = this.posts.length;
+    this.posts = this.posts.filter((p) => p.id !== id);
+    const deleted = this.posts.length < before;
+    console.log(deleted ? "пост видалено" : "Пост не знайдено");
+    return deleted;
+  }
+}
+
+export const postService = new PostService();

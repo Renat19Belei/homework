@@ -1,68 +1,53 @@
 import { Request, Response } from "express";
-import * as postService from "./post.service";
-import { CreatePostData, UpdatePostData } from "./post.types";
+import { postService } from "./post.service";
+import { IPostController } from "./post.types";
 
-export const getAllPosts = (req: Request, res: Response): void => {
-  const posts = postService.getAllPosts();
-  res.json(posts);
-};
+export const postController: IPostController = {
+  getAllPosts(_req: Request, res: Response) {
+    const posts = postService.getAllPosts();
+    res.json(posts);
+  },
 
-export const getPostById = (req: Request, res: Response): void => {
-  const id = Number(req.params.id);
-  const post = postService.getPostById(id);
+  getPostById(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    const post = postService.getPostById(id);
 
-  if (!post) {
-    res.status(404).json({ message: "Пост не знайдено" });
-    return;
-  }
+    if (!post) {
+      return res.status(404).json({ message: "Пост не знайдено" });
+    }
 
-  res.json(post);
-};
+    res.json(post);
+  },
 
-export const createPost = (req: Request, res: Response): void => {
-  const { title, content } = req.body as CreatePostData;
+  createPost(req: Request, res: Response) {
+    const { title, description, image } = req.body;
+    if (!title || !description || !image) {
+      return res.status(400).json({ message: "Всі ці поля обов'язкові" });
+    }
 
-  if (typeof title !== "string" || typeof content !== "string") {
-    res.status(400).json({ message: "Неправильны типи даних" });
-    return;
-  }
+    const post = postService.createPost({ title, description, image });
+    res.status(201).json(post);
+  },
 
-  const newPost = postService.createPost({ title, content });
-  res.status(201).json(newPost);
-};
+  updatePost(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    const updated = postService.updatePost(id, req.body);
 
-export const updatePost = (req: Request, res: Response): void => {
-  const id = Number(req.params.id);
-  const { title, content } = req.body as UpdatePostData;
+    if (!updated) {
+      return res.status(404).json({ message: "Пост не знайдено" });
+    }
 
-  if (title && typeof title !== "string") {
-    res.status(400).json({ message: "Поле title має бути рядком" });
-    return;
-  }
+    res.json(updated);
+  },
 
-  if (content && typeof content !== "string") {
-    res.status(400).json({ message: "Поле content має бути рядком" });
-    return;
-  }
+  deletePost(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    const deleted = postService.deletePost(id);
 
-  const updated = postService.updatePost(id, { title, content });
+    if (!deleted) {
+      return res.status(404).json({ message: "Пост не знайдено" });
+    }
 
-  if (!updated) {
-    res.status(404).json({ message: "Пост не знайдено" });
-    return;
-  }
-
-  res.json(updated);
-};
-
-export const deletePost = (req: Request, res: Response): void => {
-  const id = Number(req.params.id);
-  const deleted = postService.deletePost(id);
-
-  if (!deleted) {
-    res.status(404).json({ message: "Пост не знайбено" });
-    return;
-  }
-
-  res.json({ message: "Пост видалено" });
+    res.status(204).send();
+  },
 };
