@@ -1,26 +1,27 @@
-import { Request, Response } from "express";
+import type { Prisma } from "@prisma/client";
 
-export interface Post {
-  id: number;
+export type PostWithTags = Prisma.PostGetPayload<{
+  include: {
+    tags: {
+      include: {
+        tag: true
+      }
+    }
+  }
+}>;
+
+export interface CreatePostChecked {
   title: string;
-  description: string;
-  image: string;
+  content: string;
+  image?: string | null;
+  authorId: number;
+  categoryId?: number | null;
 }
-export type CreatePostData = Omit<Post, "id">;
-export type UpdatePostData = Partial<Omit<Post, "id">>;
 
-export interface IPostService {
-
-  getAllPosts(): Post[];
-  getPostById(id: number): Post | undefined;
-  createPost(data: CreatePostData): Post;
-  updatePost(id: number, data: UpdatePostData): Post | undefined;
-  deletePost(id: number): boolean;
-}
-export interface IPostController {
-  getAllPosts(req: Request, res: Response): void;
-  getPostById(req: Request, res: Response): void;
-  createPost(req: Request, res: Response): void;
-  updatePost(req: Request, res: Response): void;
-  deletePost(req: Request, res: Response): void;
+export interface UpdatePostChecked {
+  title?: string;
+  content?: string;
+  image?: string | null;
+  authorId?: number;
+  categoryId?: number | null;
 }

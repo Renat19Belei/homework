@@ -1,53 +1,80 @@
 import { Request, Response } from "express";
 import { postService } from "./post.service";
-import { IPostController } from "./post.types";
+type CreatePostDTO = {
+  title: string;
+  content: string;
+  image?: string;
+  categoryId?: number | null;
+};
 
-export const postController: IPostController = {
-  getAllPosts(_req: Request, res: Response) {
-    const posts = postService.getAllPosts();
-    res.json(posts);
+export const postController = {
+  async getAllPosts(_req: Request, res: Response) {
+    try {
+      const posts = await postService.getAllPosts();
+      res.json(posts);
+    } catch (error) {
+      console.error("Controller getAllPosts error:", error);
+      res.status(500).json({ message: "Помилка сервера" });
+    }
   },
 
-  getPostById(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    const post = postService.getPostById(id);
+  async getPostById(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: "Невірний id" });
 
-    if (!post) {
-      return res.status(404).json({ message: "Пост не знайдено" });
+      const post = await postService.getPostById(id);
+      if (!post) return res.status(404).json({ message: "Пост не знайдено" });
+      res.json(post);
+    } catch (error) {
+      console.error("Controller getPostById error:", error);
+      res.status(500).json({ message: "Помилка сервера" });
     }
-
-    res.json(post);
   },
 
-  createPost(req: Request, res: Response) {
-    const { title, description, image } = req.body;
-    if (!title || !description || !image) {
-      return res.status(400).json({ message: "Всі ці поля обов'язкові" });
-    }
+  async createPost(req: Request, res: Response) {
+    try {
+      const { title, content, image, categoryId } = req.body as CreatePostDTO;
+      const authorId = 1;
 
-    const post = postService.createPost({ title, description, image });
-    res.status(201).json(post);
+      if (!title || !content || !image) {
+        return res.status(400).json({ message: "Всі ці поля обов'язкові (title, content, image)" });
+      }
+
+      const newPost = await postService.createPost({ title, content, image, authorId, categoryId: categoryId ?? null });
+      res.status(201).json(newPost);
+    } catch (error) {
+      console.error("Controller createPost error:", error);
+      res.status(500).json({ message: "Помилка сервера" });
+    }
   },
 
-  updatePost(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    const updated = postService.updatePost(id, req.body);
+  async updatePost(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: "Невірний id" });
 
-    if (!updated) {
-      return res.status(404).json({ message: "Пост не знайдено" });
+      const updated = await postService.updatePost(id, req.body);
+      if (!updated) return res.status(404).json({ message: "Пост не знайдено" });
+      res.json(updated);
+    } catch (error) {
+      console.error("Controller updatePost error:", error);
+      res.status(500).json({ message: "Помилка сервера" });
     }
-
-    res.json(updated);
   },
 
-  deletePost(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    const deleted = postService.deletePost(id);
+  async deletePost(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: "Невірний id" });
 
-    if (!deleted) {
-      return res.status(404).json({ message: "Пост не знайдено" });
+      const deleted = await postService.deletePost(id);
+      if (!deleted) return res.status(404).json({ message: "Пост не знайдено" });
+
+      res.json(deleted);
+    } catch (error) {
+      console.error("Controller deletePost error:", error);
+      res.status(500).json({ message: "Помилка сервера" });
     }
-
-    res.status(204).send();
   },
 };

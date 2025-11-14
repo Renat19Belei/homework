@@ -1,39 +1,26 @@
-import { IPostService, CreatePostData, UpdatePostData, Post } from "./post.types";
-export class PostService implements IPostService {
-  private posts: Post[] = [];
-  
-// let posts = []
-  getAllPosts() {
-    console.log("Отримємо всі пости");
-    return this.posts;
+// src/post/post.service.ts
+import { postRepository } from "./post.repository";
+import type { PostWithTags, CreatePostChecked, UpdatePostChecked } from "./post.types";
+
+export class PostService {
+  async getAllPosts(): Promise<PostWithTags[]> {
+    return postRepository.getAllPosts();
   }
 
-  getPostById(id: number) {
-    return this.posts.find((p) => p.id === id);
+  async getPostById(id: number): Promise<PostWithTags | null> {
+    return postRepository.getPostById(id);
   }
 
-  createPost(data: CreatePostData) {
-    const id = this.posts.length ? this.posts[this.posts.length - 1].id + 1 : 1;
-    const newPost: Post = { id, ...data };
-    this.posts.push(newPost);
-    console.log("Новий пост створено", newPost);
-    return newPost;
+  async createPost(data: CreatePostChecked) {
+    return postRepository.createPost(data);
   }
 
-  updatePost(id: number, data: UpdatePostData) {
-    const index = this.posts.findIndex((p) => p.id === id);
-    if (index === -1) return undefined;
-    this.posts[index] = { ...this.posts[index], ...data };
-    console.log("Пост оновлено", this.posts[index]);
-    return this.posts[index];
+  async updatePost(id: number, data: UpdatePostChecked) {
+    return postRepository.updatePost(id, data);
   }
 
-  deletePost(id: number) {
-    const before = this.posts.length;
-    this.posts = this.posts.filter((p) => p.id !== id);
-    const deleted = this.posts.length < before;
-    console.log(deleted ? "пост видалено" : "Пост не знайдено");
-    return deleted;
+  async deletePost(id: number) {
+    return postRepository.deletePost(id);
   }
 }
 

@@ -1,31 +1,48 @@
 import { Request, Response } from "express";
-import * as userService from "./user.service";
+import { userService } from "./user.service";
 
-export const getAllUsers = (req: Request, res: Response): void => {
-  const users = userService.getAllUsers();
-  res.json(users);
-};
+export const userController = {
+  async getAllUsers(req: Request, res: Response) {
+    try {
+      const users = await userService.getAllUsers();
+      res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  },
 
-export const getUserById = (req: Request, res: Response): void => {
-  const id = Number(req.params.id);
-  const user = userService.getUserById(id);
+  async getUserById(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      const user = await userService.getUserById(id);
 
-  if (user) {
-    res.json(user);
-  } else {
-    res.status(404).json({ message: "Користувача не знайдено" });
+      if (!user) {
+        return res.status(404).json({ message: "Користувача не знайдено" });
+      }
+
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  async register(req: Request, res: Response) {
+    try {
+      const { name, email, password } = req.body;
+      const newUser = await userService.register({ name, email, password });
+      res.status(201).json(newUser);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  },
+
+  async login(req: Request, res: Response) {
+    try {
+      const { email, password } = req.body;
+      const user = await userService.login(email, password);
+      res.json({ message: "Ви успішно увійшли", user });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
   }
-};
-
-export const createUser = (req: Request, res: Response): void => {
-  const { name, email } = req.body as userService.CreateUser;
-
-
-  if (!name || !email) {
-    res.status(400).json({ message: "Треба вказати name та email" });
-    return;
-  }
-
-  const newUser = userService.createUser({ name, email });
-  res.status(201).json(newUser);
 };
