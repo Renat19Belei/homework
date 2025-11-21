@@ -7,7 +7,7 @@ async function main() {
     create: {
       email: "admin@example.com",
       password: "hashed_dummy_password",
-      name: "Admin",
+      firstName: "Admin",
     },
   });
   const category = await prisma.category.upsert({
@@ -34,7 +34,7 @@ async function main() {
     },
     include: {
       tags: { include: { tag: true } },
-      author: true,
+      createdBy: true,
       category: true,
     },
   });

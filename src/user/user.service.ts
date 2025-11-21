@@ -1,41 +1,60 @@
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { userRepository } from "./user.repository";
-import { CreateUserDTO } from "./user.types";
+import { RegisterUserDTO, LoginUserDTO } from "./user.types";
+import { env } from "../config/env";
+import { User } from "@prisma/client";
+
+const generateToken = (user: User) => {
+  const payload = { userId: user.id, isAdmin: user.isAdmin };
+  return jwt.sign(payload, env.JWT_SECRET, { expiresIn: '1d' }); 
+};
 
 export class UserService {
-  async getAllUsers() {
-    return userRepository.getAll();
-  }
 
-  async getUserById(id: number) {
-    return userRepository.findById(id);
-  }
+  async register(data: RegisterUserDTO) {
+    const { email, password, firstName, secondName, avatar } = data;
 
-  async register(data: CreateUserDTO) {
-    const { name, email, password } = data;
-
-    const existingUser = await userRepository.findByEmail(email);
+    const existingUser = await userRepository.findByEmailForAuth(email);
     if (existingUser) {
-      throw new Error("Користувач з таким Email вже є");
+      throw new Error("Користувач з таким email вже існує");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    return userRepository.create(name, email, hashedPassword);
+    const newUser = await userRepository.create({
+      firstName,
+      secondName,
+      email,
+      avatar,
+      password: hashedPassword,
+    });
+    
+    const token = generateToken(newUser as User);
+    
+    return { user: newUser, token };
   }
 
-  async login(email: string, password: string) {
-    const user = await userRepository.findByEmail(email);
+  async login(data: LoginUserDTO) {
+    const { email, password } = data;
+
+    const user = await userRepository.findByEmailForAuth(email);
     if (!user) {
-      throw new Error("користувача не знайдено");
+      throw new Error("Невірний email або пароль");
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      throw new Error("Невірний пароль");
+      throw new Error("Невірний email або пароль");
     }
 
-    return user;
+    const token = generateToken(user);
+
+    return { user: { id: user.id, email: user.email, isAdmin: user.isAdmin }, token }; 
+  }
+
+  async getMe(id: number) {
+    return userRepository.findByIdWithoutPassword(id);
   }
 }
 

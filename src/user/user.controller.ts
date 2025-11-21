@@ -1,48 +1,106 @@
-import { Request, Response } from "express";
-import { userService } from "./user.service";
+import { Response } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
+import { env } from '../config/env';
+import { CustomRequest } from '../middlewares/auth.middleware';
 
-export const userController = {
-  async getAllUsers(req: Request, res: Response) {
+const prisma = new PrismaClient();
+const SALT_ROUNDS = 10; 
+
+const generateToken = (userId: number): string => {
+    return jwt.sign({ id: userId }, env.JWT_SECRET.toString(), { expiresIn: '1d' });
+};
+export const registerUser = async (req: CustomRequest, res: Response) => {
+    const { email, password, firstName, secondName, avatar } = req.body;
+
     try {
-      const users = await userService.getAllUsers();
-      res.json(users);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  },
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Користувач з таким email вже існує.' });
+        }
 
-  async getUserById(req: Request, res: Response) {
+        const salt = await bcrypt.genSalt(SALT_ROUNDS);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        const newUser = await prisma.user.create({
+            data: {
+                email,
+                password: hashedPassword,
+                firstName,
+                secondName,
+                avatar,
+            }
+        });
+
+        const token = generateToken(newUser.id);
+
+        return res.status(201).json({ 
+            id: newUser.id,
+            email: newUser.email,
+            token 
+        });
+
+    } catch (error) {
+        console.error("ПОмилка реєстрації:", error);
+        return res.status(500).json({ message: 'Помилка серверу при реєстрації.' });
+    }
+};
+
+export const loginUser = async (req: CustomRequest, res: Response) => {
+    const { email, password } = req.body;
+
     try {
-      const id = Number(req.params.id);
-      const user = await userService.getUserById(id);
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return res.status(400).json({ message: 'Невірні дані' });
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Невірні дані' });
+        }
 
-      if (!user) {
-        return res.status(404).json({ message: "Користувача не знайдено" });
-      }
+        const token = generateToken(user.id);
 
-      res.json(user);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+        return res.status(200).json({ 
+            id: user.id,
+            email: user.email,
+            token 
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Помилка серверу при вході' });
     }
-  },
+};
 
-  async register(req: Request, res: Response) {
+export const getMe = async (req: CustomRequest, res: Response) => {
+    const userId = req.userId;
+
     try {
-      const { name, email, password } = req.body;
-      const newUser = await userService.register({ name, email, password });
-      res.status(201).json(newUser);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  },
+        if (!userId) {
+            return res.status(401).json({ message: 'ID користувача не знайдено' });
+        }
 
-  async login(req: Request, res: Response) {
-    try {
-      const { email, password } = req.body;
-      const user = await userService.login(email, password);
-      res.json({ message: "Ви успішно увійшли", user });
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                firstName: true,
+                secondName: true,
+                email: true,
+                avatar: true,
+                isAdmin: true,
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Користувача не знайдено' });
+        }
+
+        return res.status(200).json(user);
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Помилка серверу при отриманні даних' });
     }
-  }
 };

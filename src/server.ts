@@ -4,6 +4,10 @@ import categoryRouter from "./category/category.router";
 import tagRouter from "./tag/tag.router";
 import userRouter from "./user/user.router";
 
+module.exports = require('module-alias')([
+  { base: __dirname, alias: '@' }
+]);
+
 const app: Express = express();
 app.use(express.json());
 

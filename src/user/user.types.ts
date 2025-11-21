@@ -1,10 +1,12 @@
-export interface CreateUserDTO {
-  name?: string;
+export interface RegisterUserDTO {
+  firstName: string;
+  secondName: string;
   email: string;
   password: string;
+  avatar: string;
 }
 
-export interface LoginDTO {
+export interface LoginUserDTO {
   email: string;
   password: string;
 }

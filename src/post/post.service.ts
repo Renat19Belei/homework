@@ -1,4 +1,3 @@
-// src/post/post.service.ts
 import { postRepository } from "./post.repository";
 import type { PostWithTags, CreatePostChecked, UpdatePostChecked } from "./post.types";
 
